@@ -3,10 +3,13 @@
 namespace App\Entity;
 
 use App\Repository\ProductRepository;
+use App\Entity\Category;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
+use App\Enum\ProductSize;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
@@ -25,8 +28,8 @@ class Product
     #[ORM\Column]
     private ?int $priceProduct = null;
 
-    #[ORM\Column(type: Types::ARRAY)]
-    private array $otherAttribute = [];
+    #[ORM\Column(length: 255)]
+    private ?string $metal = null;
 
     #[ORM\ManyToOne(inversedBy: 'products')]
     private ?User $userId = null;
@@ -34,26 +37,30 @@ class Product
     /**
      * @var Collection<int, Review>
      */
+
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'productId')]
     private Collection $reviews;
 
-    /**
-     * @var Collection<int, Category>
-     */
-    #[ORM\OneToMany(targetEntity: Category::class, mappedBy: 'ProductId')]
-    private Collection $categories;
+    #[ORM\ManyToOne(inversedBy: 'products')]
+    private ?Category $category = null;
+
+
+    #[ORM\Column(type: Types::JSON)]
+    private array $sizeProduct = [];
+
+    #[ORM\Column(length: 255)]
+    private ?string $imgUrlProduct = null;
 
     public function __construct()
     {
         $this->reviews = new ArrayCollection();
-        $this->categories = new ArrayCollection();
     }
-
+    #[Groups(['product:read'])]
     public function getId(): ?int
     {
         return $this->id;
     }
-
+    #[Groups(['product:read'])]
     public function getNameProduct(): ?string
     {
         return $this->nameProduct;
@@ -65,7 +72,7 @@ class Product
 
         return $this;
     }
-
+    #[Groups(['product:read'])]
     public function getDescriptionProduct(): ?string
     {
         return $this->descriptionProduct;
@@ -77,7 +84,7 @@ class Product
 
         return $this;
     }
-
+    #[Groups(['product:read'])]
     public function getPriceProduct(): ?int
     {
         return $this->priceProduct;
@@ -89,22 +96,36 @@ class Product
 
         return $this;
     }
-
-    public function getOtherAttribute(): array
+    #[Groups(['product:read'])]
+    public function getMetal(): ?string
     {
-        return $this->otherAttribute;
+        return $this->metal;
     }
 
-    public function setOtherAttribute(array $otherAttribute): static
+    public function setMetal(string $metal): static
     {
-        $this->otherAttribute = $otherAttribute;
+        $this->metal = $metal;
 
         return $this;
     }
-
+    #[Groups(['product:read'])]
     public function getUserId(): ?User
     {
         return $this->userId;
+    }
+
+
+
+    public function getCategory(): ?Category
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?Category $category): static
+    {
+        $this->category = $category;
+
+        return $this;
     }
 
     public function setUserId(?User $userId): static
@@ -144,32 +165,28 @@ class Product
         return $this;
     }
 
-    /**
-     * @return Collection<int, Category>
-     */
-    public function getCategories(): Collection
+
+
+    #[Groups(['product:read'])]
+    public function getSizeProduct(): ?array
     {
-        return $this->categories;
+        return $this->sizeProduct;
     }
 
-    public function addCategory(Category $category): static
+    public function setSizeProduct(?array $sizes): self
     {
-        if (!$this->categories->contains($category)) {
-            $this->categories->add($category);
-            $category->setProductId($this);
-        }
-
+        $this->sizeProduct = $sizes;
         return $this;
     }
-
-    public function removeCategory(Category $category): static
+    #[Groups(['product:read'])]
+    public function getImgUrlProduct(): ?string
     {
-        if ($this->categories->removeElement($category)) {
-            // set the owning side to null (unless already changed)
-            if ($category->getProductId() === $this) {
-                $category->setProductId(null);
-            }
-        }
+        return $this->imgUrlProduct;
+    }
+
+    public function setImgUrlProduct(string $imgUrlProduct): static
+    {
+        $this->imgUrlProduct = $imgUrlProduct;
 
         return $this;
     }

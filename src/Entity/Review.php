@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\ReviewRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: ReviewRepository::class)]
 class Review
@@ -29,11 +30,16 @@ class Review
     #[ORM\ManyToOne(inversedBy: 'reviews')]
     private ?Product $productId = null;
 
+    #[ORM\Column]
+    private ?int $rating = null;
+
+    #[Groups(['review:read'])]
     public function getId(): ?int
     {
         return $this->id;
     }
 
+    #[Groups(['review:read'])]
     public function getTextReview(): ?string
     {
         return $this->textReview;
@@ -45,7 +51,7 @@ class Review
 
         return $this;
     }
-
+    #[Groups(['review:read'])]
     public function getNumberTone(): ?int
     {
         return $this->numberTone;
@@ -57,7 +63,7 @@ class Review
 
         return $this;
     }
-
+    #[Groups(['review:read'])]
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -69,7 +75,7 @@ class Review
 
         return $this;
     }
-
+    #[Groups(['review:read'])]
     public function isModerated(): ?bool
     {
         return $this->isModerated;
@@ -90,6 +96,18 @@ class Review
     public function setProductId(?Product $productId): static
     {
         $this->productId = $productId;
+
+        return $this;
+    }
+    #[Groups(['review:read'])]
+    public function getRating(): ?int
+    {
+        return $this->rating;
+    }
+
+    public function setRating(int $rating): static
+    {
+        $this->rating = $rating;
 
         return $this;
     }

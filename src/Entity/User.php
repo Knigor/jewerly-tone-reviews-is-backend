@@ -6,10 +6,13 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
-class User
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -41,7 +44,7 @@ class User
     {
         $this->products = new ArrayCollection();
     }
-
+    #[Groups(['product:read'])]
     public function getId(): ?int
     {
         return $this->id;
@@ -59,18 +62,18 @@ class User
         return $this;
     }
 
-    public function getUsername(): ?string
+    public function getUserAboba(): ?string
     {
         return $this->username;
     }
 
-    public function setUsername(string $username): static
+    public function setUserAboba(string $username): static
     {
         $this->username = $username;
 
         return $this;
     }
-
+    #[Groups(['product:read'])]
     public function getEmail(): ?string
     {
         return $this->email;
@@ -83,16 +86,35 @@ class User
         return $this;
     }
 
-    public function getPasswordHash(): ?string
-    {
-        return $this->passwordHash;
-    }
 
     public function setPasswordHash(string $passwordHash): static
     {
         $this->passwordHash = $passwordHash;
 
         return $this;
+    }
+
+    public function getPassword(): ?string
+    {
+        return $this->passwordHash; // возвращаем хеш пароля
+    }
+
+    public function getRoles(): array
+    {
+        // Возвращаем роли в виде массива
+        return [$this->role];
+    }
+
+    public function eraseCredentials(): void
+    {
+        // Если есть временные чувствительные данные, очищаем их здесь
+        // В вашем случае можно оставить пустым
+    }
+
+    public function getUserIdentifier(): string
+    {
+        // Возвращаем уникальный идентификатор пользователя (email или username)
+        return $this->email; // или return $this->username;
     }
 
     public function getRole(): ?string
