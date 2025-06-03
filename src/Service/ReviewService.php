@@ -9,35 +9,50 @@ use App\Repository\ReviewRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 class ReviewService
 {
+
     public function __construct(
         private EntityManagerInterface $em,
         private ReviewRepository $reviewRepository,
         private ProductRepository $productRepository,
+        private ToneAnalyzerService $toneAnalyzer
     ) {}
 
+    /**
+     * @throws TransportExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws ClientExceptionInterface
+     */
     public function createReview(array $data): Review
     {
-        $review = new Review();
-
         if (!isset($data['textReview'], $data['productId'])) {
-            throw new InvalidArgumentException('textReview, numberTone and productId are required.');
+            throw new InvalidArgumentException('textReview and productId are required.');
         }
-
-        $review->setTextReview($data['textReview']);
-        $review->setNumberTone(0);
-        $review->setRating($data['rating']);
-        $review->setCreatedAt(new \DateTimeImmutable());
-        $review->setIsModerated($data['isModerated'] ?? false);
 
         $product = $this->productRepository->find($data['productId']);
         if (!$product) {
             throw new NotFoundHttpException('Product not found with ID ' . $data['productId']);
         }
 
+        $review = new Review();
+        $review->setTextReview($data['textReview']);
+        $review->setRating((int)($data['rating'] ?? 0));
+        $review->setCreatedAt(new \DateTimeImmutable());
+        $review->setIsModerated($data['isModerated'] ?? false);
         $review->setProductId($product);
+
+        // 🧠 Анализ тональности
+        $tone = $this->toneAnalyzer->analyze($data['textReview']);
+        $review->setNumberTone($tone ?? 0);
 
         $this->em->persist($review);
         $this->em->flush();
