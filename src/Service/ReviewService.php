@@ -122,8 +122,8 @@ class ReviewService
         return $this->reviewRepository->find($id);
     }
 
-    public function getAllReviews(): array
+    public function getAllReviews(string $sort = 'createdAt', string $order = 'DESC'): array
     {
-        return $this->reviewRepository->findAll();
+        return $this->reviewRepository->findAllSorted($sort, $order);
     }
 }

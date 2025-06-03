@@ -16,28 +16,27 @@ class ProductRepository extends ServiceEntityRepository
         parent::__construct($registry, Product::class);
     }
 
-    //    /**
-    //     * @return Product[] Returns an array of Product objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('p.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function findBySearchQuery(string $search, string $sortField = 'id', string $sortOrder = 'asc'): array
+    {
+        $qb = $this->createQueryBuilder('p');
 
-    //    public function findOneBySomeField($value): ?Product
-    //    {
-    //        return $this->createQueryBuilder('p')
-    //            ->andWhere('p.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+        $qb->where('LOWER(p.nameProduct) LIKE :search')
+            ->orWhere('LOWER(p.descriptionProduct) LIKE :search')
+            ->setParameter('search', '%' . mb_strtolower($search) . '%');
+
+        $allowedFields = ['id', 'nameProduct', 'priceProduct', 'metal'];
+        $allowedOrders = ['asc', 'desc'];
+
+        if (!in_array($sortField, $allowedFields, true)) {
+            $sortField = 'id';
+        }
+
+        if (!in_array(strtolower($sortOrder), $allowedOrders, true)) {
+            $sortOrder = 'asc';
+        }
+
+        $qb->orderBy('p.' . $sortField, $sortOrder);
+
+        return $qb->getQuery()->getResult();
+    }
 }

@@ -102,8 +102,24 @@ class ProductService
         return $this->productRepository->find($id);
     }
 
-    public function getAllProducts(): array
+    public function getAllProducts(string $sortField = 'id', string $sortOrder = 'asc', ?string $search = null): array
     {
-        return $this->productRepository->findAll();
+        if ($search !== null && trim($search) !== '') {
+            return $this->productRepository->findBySearchQuery($search, $sortField, $sortOrder);
+        }
+
+        $allowedFields = ['id', 'nameProduct', 'priceProduct', 'metal'];
+        $allowedOrder = ['asc', 'desc'];
+
+        if (!in_array($sortField, $allowedFields, true)) {
+            throw new InvalidArgumentException("Invalid sort field: $sortField");
+        }
+
+        if (!in_array(strtolower($sortOrder), $allowedOrder, true)) {
+            throw new InvalidArgumentException("Invalid sort order: $sortOrder");
+        }
+
+        return $this->productRepository->findBy([], [$sortField => $sortOrder]);
     }
+
 }

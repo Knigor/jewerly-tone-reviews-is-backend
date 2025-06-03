@@ -43,7 +43,7 @@ class TokenController extends AbstractController
             'user' => [
                 'id' => $user->getId(),
                 'name' => $user->getFullName(),
-                'username' => $user->getUsername(),
+                'username' => $user->getUserAboba(),
                 'email' => $user->getEmail(),
                 'role' => $user->getRole()
             ]

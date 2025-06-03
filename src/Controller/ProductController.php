@@ -70,10 +70,19 @@ class ProductController extends AbstractController
     }
 
     #[Route('', methods: ['GET'])]
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $products = $this->productService->getAllProducts();
-        return $this->json($products,200,[], ['groups' => 'product:read']);
+        $sortField = $request->query->get('sort', 'id');
+        $sortOrder = $request->query->get('order', 'asc');
+        $search = $request->query->get('search');
+
+        try {
+            $products = $this->productService->getAllProducts($sortField, $sortOrder, $search);
+        } catch (\InvalidArgumentException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        }
+
+        return $this->json($products, 200, [], ['groups' => 'product:read']);
     }
 
     #[Route('/{id}', methods: ['PUT'])]

@@ -41,11 +41,16 @@ class ReviewController extends AbstractController
     }
 
     #[Route('', methods: ['GET'])]
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $reviews = $this->reviewService->getAllReviews();
+        $sort = $request->query->get('sort', 'createdAt');
+        $order = $request->query->get('order', 'DESC');
+
+        $reviews = $this->reviewService->getAllReviews($sort, $order);
+
         return $this->json($reviews, 200, [], ['groups' => 'review:read']);
     }
+
 
     #[Route('/{id}/moderate', methods: ['PUT'])]
     public function moderate(int $id): JsonResponse
