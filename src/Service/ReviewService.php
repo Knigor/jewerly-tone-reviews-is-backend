@@ -4,8 +4,10 @@ namespace App\Service;
 
 use App\Entity\Product;
 use App\Entity\Review;
+use App\Entity\User;
 use App\Repository\ProductRepository;
 use App\Repository\ReviewRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -18,11 +20,13 @@ use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 class ReviewService
 {
 
+
     public function __construct(
         private EntityManagerInterface $em,
         private ReviewRepository $reviewRepository,
         private ProductRepository $productRepository,
-        private ToneAnalyzerService $toneAnalyzer
+        private ToneAnalyzerService $toneAnalyzer,
+        private UserRepository $userRepository,
     ) {}
 
     /**
@@ -34,13 +38,18 @@ class ReviewService
      */
     public function createReview(array $data): Review
     {
-        if (!isset($data['textReview'], $data['productId'])) {
-            throw new InvalidArgumentException('textReview and productId are required.');
+        if (!isset($data['textReview'], $data['productId'], $data['userId'])) {
+            throw new InvalidArgumentException('textReview, productId and userId are required.');
         }
 
         $product = $this->productRepository->find($data['productId']);
         if (!$product) {
             throw new NotFoundHttpException('Product not found with ID ' . $data['productId']);
+        }
+
+        $user = $this->userRepository->find($data['userId']);
+        if (!$user) {
+            throw new NotFoundHttpException('User not found with ID ' . $data['userId']);
         }
 
         $review = new Review();
@@ -49,8 +58,8 @@ class ReviewService
         $review->setCreatedAt(new \DateTimeImmutable());
         $review->setIsModerated($data['isModerated'] ?? false);
         $review->setProductId($product);
+        $review->setUser($user);
 
-        // 🧠 Анализ тональности
         $tone = $this->toneAnalyzer->analyze($data['textReview']);
         $review->setNumberTone($tone ?? 0);
 
@@ -125,5 +134,21 @@ class ReviewService
     public function getAllReviews(string $sort = 'createdAt', string $order = 'DESC'): array
     {
         return $this->reviewRepository->findAllSorted($sort, $order);
+    }
+
+    public function getModeratedReviewsByProduct(int $productId): array
+    {
+        $product = $this->productRepository->find($productId);
+
+        if (!$product) {
+            throw new NotFoundHttpException("Product with ID $productId not found.");
+        }
+
+        return $this->reviewRepository->findBy([
+            'productId' => $product,
+            'isModerated' => true
+        ], [
+            'createdAt' => 'DESC'
+        ]);
     }
 }

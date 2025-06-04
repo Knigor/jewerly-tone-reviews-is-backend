@@ -15,6 +15,11 @@ class Review
     #[ORM\Column]
     private ?int $id = null;
 
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Groups(['review:read'])]
+    private ?User $user = null;
+
     #[ORM\Column(type: Types::TEXT)]
     private ?string $textReview = null;
 
@@ -28,6 +33,7 @@ class Review
     private ?bool $isModerated = null;
 
     #[ORM\ManyToOne(inversedBy: 'reviews')]
+    #[ORM\JoinColumn(name: 'product_id', referencedColumnName: 'id', onDelete: 'CASCADE')]
     private ?Product $productId = null;
 
     #[ORM\Column]
@@ -37,6 +43,18 @@ class Review
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    #[Groups(['review:read'])]
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): self
+    {
+        $this->user = $user;
+        return $this;
     }
 
     #[Groups(['review:read'])]

@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Service\ReviewService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -18,6 +19,7 @@ class ReviewController extends AbstractController
     {
         $data = json_decode($request->getContent(), true, 512, JSON_THROW_ON_ERROR);
 
+
         try {
             $review = $this->reviewService->createReview($data);
         } catch (\InvalidArgumentException $e) {
@@ -26,8 +28,21 @@ class ReviewController extends AbstractController
             return $this->json(['error' => $e->getMessage()], 404);
         }
 
-        return $this->json(['message' => 'Review created successfully'], 201, [], ['groups' => 'review:read']);
+        return $this->json($review, 201, [], ['groups' => 'review:read']);
     }
+
+    #[Route('/product/{productId}', methods: ['GET'])]
+    public function getModeratedByProduct(int $productId): JsonResponse
+    {
+        try {
+            $reviews = $this->reviewService->getModeratedReviewsByProduct($productId);
+        } catch (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
+            return $this->json(['error' => $e->getMessage()], 404);
+        }
+
+        return $this->json($reviews, 200, [], ['groups' => 'review:read']);
+    }
+
 
     #[Route('/{id}', methods: ['GET'])]
     public function show(int $id): JsonResponse

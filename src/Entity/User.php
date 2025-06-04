@@ -17,15 +17,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['review:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['review:read'])]
     private ?string $fullName = null;
 
     #[ORM\Column(length: 255)]
     private ?string $username = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['review:read'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
@@ -49,7 +52,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return $this->id;
     }
-
+    #[Groups(['review:read'])]
     public function getFullName(): ?string
     {
         return $this->fullName;

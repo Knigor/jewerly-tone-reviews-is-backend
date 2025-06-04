@@ -35,8 +35,63 @@ class ProductRepository extends ServiceEntityRepository
             $sortOrder = 'asc';
         }
 
+        if ($sortField === 'category') {
+            $qb->leftJoin('p.category', 'c')
+                ->addSelect('c')
+                ->orderBy('c.name', $sortOrder);
+        } else {
+            $qb->orderBy('p.' . $sortField, $sortOrder);
+        }
+
         $qb->orderBy('p.' . $sortField, $sortOrder);
 
         return $qb->getQuery()->getResult();
     }
+
+    public function findSortedByCategory(string $sortOrder = 'asc', ?string $search = null): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.category', 'c')
+            ->addSelect('c')
+            ->orderBy('c.name', $sortOrder);
+
+        if ($search !== null && trim($search) !== '') {
+            $qb->andWhere('LOWER(p.nameProduct) LIKE :search OR LOWER(p.descriptionProduct) LIKE :search')
+                ->setParameter('search', '%' . mb_strtolower($search) . '%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+
+    public function findFilteredProducts(
+        ?string $search = null,
+        string $sortField = 'id',
+        string $sortOrder = 'asc',
+        ?int $categoryId = null
+    ): array {
+        $qb = $this->createQueryBuilder('p');
+
+        if ($sortField === 'category') {
+            $qb->leftJoin('p.category', 'c')
+                ->addSelect('c')
+                ->orderBy('c.name', $sortOrder);
+        } else {
+            $qb->orderBy('p.' . $sortField, $sortOrder);
+        }
+
+        if ($search !== null && trim($search) !== '') {
+            $qb->andWhere('LOWER(p.nameProduct) LIKE :search OR LOWER(p.descriptionProduct) LIKE :search')
+                ->setParameter('search', '%' . mb_strtolower($search) . '%');
+        }
+
+        if ($categoryId !== null) {
+            $qb->andWhere('p.category = :categoryId')
+                ->setParameter('categoryId', $categoryId);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+
 }

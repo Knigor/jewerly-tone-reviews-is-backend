@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Product;
 use App\Entity\User;
+use App\Entity\Category;
 use App\Repository\ProductRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
@@ -32,6 +33,18 @@ class ProductService
         }
 
         $sizeArray = $data['size']; // массив int
+
+        if (!isset($data['category_id'])) {
+            throw new InvalidArgumentException('category_id is required.');
+        }
+
+        $category = $this->em->getRepository(Category::class)->find($data['category_id']);
+
+        if (!$category) {
+            throw new NotFoundHttpException('Category not found with ID ' . $data['category_id']);
+        }
+
+        $product->setCategory($category);
 
 
         $product->setSizeProduct($sizeArray);
@@ -78,6 +91,22 @@ class ProductService
         if (isset($data['size'])) {
             $product->setSizeProduct($data['size']);
         }
+        if (isset($data['img_url'])) {
+            $product->setImgUrlProduct($data['img_url']);
+        }
+
+
+        if (!isset($data['category_id'])) {
+            throw new InvalidArgumentException('category_id is required.');
+        }
+
+        $category = $this->em->getRepository(Category::class)->find($data['category_id']);
+
+        if (!$category) {
+            throw new NotFoundHttpException('Category not found with ID ' . $data['category_id']);
+        }
+
+        $product->setCategory($category);
 
         $this->em->flush();
 
@@ -102,24 +131,23 @@ class ProductService
         return $this->productRepository->find($id);
     }
 
-    public function getAllProducts(string $sortField = 'id', string $sortOrder = 'asc', ?string $search = null): array
-    {
-        if ($search !== null && trim($search) !== '') {
-            return $this->productRepository->findBySearchQuery($search, $sortField, $sortOrder);
-        }
-
-        $allowedFields = ['id', 'nameProduct', 'priceProduct', 'metal'];
+    public function getAllProducts(
+        string $sortField = 'id',
+        string $sortOrder = 'asc',
+        ?string $search = null,
+        ?int $categoryId = null
+    ): array {
         $allowedOrder = ['asc', 'desc'];
 
-        if (!in_array($sortField, $allowedFields, true)) {
-            throw new InvalidArgumentException("Invalid sort field: $sortField");
-        }
+        // Всегда сортируем по priceProduct
+        $sortField = 'priceProduct';
 
         if (!in_array(strtolower($sortOrder), $allowedOrder, true)) {
             throw new InvalidArgumentException("Invalid sort order: $sortOrder");
         }
 
-        return $this->productRepository->findBy([], [$sortField => $sortOrder]);
+        return $this->productRepository->findFilteredProducts($search, $sortField, $sortOrder, $categoryId);
     }
+
 
 }
