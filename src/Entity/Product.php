@@ -52,9 +52,16 @@ class Product
     #[ORM\Column(length: 255)]
     private ?string $imgUrlProduct = null;
 
+    /**
+     * @var Collection<int, OrderItems>
+     */
+    #[ORM\OneToMany(targetEntity: OrderItems::class, mappedBy: 'productId')]
+    private Collection $orderItems;
+
     public function __construct()
     {
         $this->reviews = new ArrayCollection();
+        $this->orderItems = new ArrayCollection();
     }
     #[Groups(['product:read'])]
     public function getId(): ?int
@@ -188,6 +195,36 @@ class Product
     public function setImgUrlProduct(string $imgUrlProduct): static
     {
         $this->imgUrlProduct = $imgUrlProduct;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, OrderItems>
+     */
+    public function getOrderItems(): Collection
+    {
+        return $this->orderItems;
+    }
+
+    public function addOrderItem(OrderItems $orderItem): static
+    {
+        if (!$this->orderItems->contains($orderItem)) {
+            $this->orderItems->add($orderItem);
+            $orderItem->setProductId($this);
+        }
+
+        return $this;
+    }
+
+    public function removeOrderItem(OrderItems $orderItem): static
+    {
+        if ($this->orderItems->removeElement($orderItem)) {
+            // set the owning side to null (unless already changed)
+            if ($orderItem->getProductId() === $this) {
+                $orderItem->setProductId(null);
+            }
+        }
 
         return $this;
     }
