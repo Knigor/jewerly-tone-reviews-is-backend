@@ -132,22 +132,16 @@ class ProductService
     }
 
     public function getAllProducts(
-        string $sortField = 'id',
-        string $sortOrder = 'asc',
-        ?string $search = null,
-        ?int $categoryId = null
+        string $sortField,
+        string $sortOrder,
+        ?string $search,
+        ?int $categoryId,
+        ?int $minRating,
+        ?int $minTone
     ): array {
-        $allowedOrder = ['asc', 'desc'];
-
-        // Всегда сортируем по priceProduct
-        $sortField = 'priceProduct';
-
-        if (!in_array(strtolower($sortOrder), $allowedOrder, true)) {
-            throw new InvalidArgumentException("Invalid sort order: $sortOrder");
-        }
-
-        return $this->productRepository->findFilteredProducts($search, $sortField, $sortOrder, $categoryId);
+        return $this->productRepository->getAllProducts($sortField, $sortOrder, $search, $categoryId, $minRating, $minTone);
     }
+
 
 
 }

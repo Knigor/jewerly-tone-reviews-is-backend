@@ -16,82 +16,68 @@ class ProductRepository extends ServiceEntityRepository
         parent::__construct($registry, Product::class);
     }
 
-    public function findBySearchQuery(string $search, string $sortField = 'id', string $sortOrder = 'asc'): array
-    {
-        $qb = $this->createQueryBuilder('p');
-
-        $qb->where('LOWER(p.nameProduct) LIKE :search')
-            ->orWhere('LOWER(p.descriptionProduct) LIKE :search')
-            ->setParameter('search', '%' . mb_strtolower($search) . '%');
-
-        $allowedFields = ['id', 'nameProduct', 'priceProduct', 'metal'];
-        $allowedOrders = ['asc', 'desc'];
-
-        if (!in_array($sortField, $allowedFields, true)) {
-            $sortField = 'id';
-        }
-
-        if (!in_array(strtolower($sortOrder), $allowedOrders, true)) {
-            $sortOrder = 'asc';
-        }
-
-        if ($sortField === 'category') {
-            $qb->leftJoin('p.category', 'c')
-                ->addSelect('c')
-                ->orderBy('c.name', $sortOrder);
-        } else {
-            $qb->orderBy('p.' . $sortField, $sortOrder);
-        }
-
-        $qb->orderBy('p.' . $sortField, $sortOrder);
-
-        return $qb->getQuery()->getResult();
-    }
-
-    public function findSortedByCategory(string $sortOrder = 'asc', ?string $search = null): array
-    {
-        $qb = $this->createQueryBuilder('p')
-            ->leftJoin('p.category', 'c')
-            ->addSelect('c')
-            ->orderBy('c.name', $sortOrder);
-
-        if ($search !== null && trim($search) !== '') {
-            $qb->andWhere('LOWER(p.nameProduct) LIKE :search OR LOWER(p.descriptionProduct) LIKE :search')
-                ->setParameter('search', '%' . mb_strtolower($search) . '%');
-        }
-
-        return $qb->getQuery()->getResult();
-    }
-
-
-    public function findFilteredProducts(
-        ?string $search = null,
+    public function getAllProducts(
         string $sortField = 'id',
         string $sortOrder = 'asc',
-        ?int $categoryId = null
+        ?string $search = null,
+        ?int $categoryId = null,
+        ?int $minRating = null,
+        ?int $minTone = null
     ): array {
-        $qb = $this->createQueryBuilder('p');
+        $qb = $this->createQueryBuilder('p')
+            ->leftJoin('p.reviews', 'r')
+            ->addSelect('AVG(r.rating) as avgRating')
+            ->addSelect('AVG(r.numberTone) as avgTone')
+            ->groupBy('p.id');
 
-        if ($sortField === 'category') {
-            $qb->leftJoin('p.category', 'c')
-                ->addSelect('c')
-                ->orderBy('c.name', $sortOrder);
-        } else {
-            $qb->orderBy('p.' . $sortField, $sortOrder);
+        if ($search) {
+            $qb->andWhere('p.nameProduct LIKE :search OR p.descriptionProduct LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
         }
 
-        if ($search !== null && trim($search) !== '') {
-            $qb->andWhere('LOWER(p.nameProduct) LIKE :search OR LOWER(p.descriptionProduct) LIKE :search')
-                ->setParameter('search', '%' . mb_strtolower($search) . '%');
-        }
-
-        if ($categoryId !== null) {
+        if ($categoryId) {
             $qb->andWhere('p.category = :categoryId')
                 ->setParameter('categoryId', $categoryId);
         }
 
-        return $qb->getQuery()->getResult();
+        if ($minRating !== null || $minTone !== null) {
+            $having = [];
+
+            if ($minRating !== null) {
+                if ($minRating === -1) {
+                    $having[] = 'AVG(r.rating) = 0';
+                } elseif ($minRating === 1) {
+                    $having[] = 'AVG(r.rating) > 0';
+                } else {
+                    $having[] = 'AVG(r.rating) >= :minRating';
+                    $qb->setParameter('minRating', $minRating);
+                }
+            }
+
+            if ($minTone !== null) {
+                if ($minTone === -1) {
+                    $having[] = 'AVG(r.numberTone) = 0';
+                } elseif ($minTone === 1) {
+                    $having[] = 'AVG(r.numberTone) > 0';
+                } else {
+                    $having[] = 'AVG(r.numberTone) >= :minTone';
+                    $qb->setParameter('minTone', $minTone);
+                }
+            }
+
+            $qb->having(implode(' AND ', $having));
+        }
+
+        $results = $qb->getQuery()->getResult();
+
+        // Обновляем объекты Product
+        foreach ($results as $row) {
+            /** @var Product $product */
+            $product = $row[0];
+            $product->setAvgRating(round((float) $row['avgRating'], 2));
+            $product->setAvgTone(round((float) $row['avgTone'], 2));
+        }
+
+        return array_column($results, 0);
     }
-
-
 }

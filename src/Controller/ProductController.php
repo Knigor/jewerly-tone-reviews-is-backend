@@ -76,9 +76,18 @@ class ProductController extends AbstractController
         $sortOrder = $request->query->get('order', 'asc');
         $search = $request->query->get('search');
         $categoryId = $request->query->get('category');
+        $minRating = $request->query->get('min_rating');
+        $minTone = $request->query->get('min_tone');
 
         try {
-            $products = $this->productService->getAllProducts($sortField, $sortOrder, $search, $categoryId);
+            $products = $this->productService->getAllProducts(
+                $sortField,
+                $sortOrder,
+                $search,
+                $categoryId,
+                $minRating !== null ? (int)$minRating : null,
+                $minTone !== null ? (int)$minTone : null
+            );
         } catch (\InvalidArgumentException $e) {
             return $this->json(['error' => $e->getMessage()], 400);
         }

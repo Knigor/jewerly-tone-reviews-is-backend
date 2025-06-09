@@ -52,6 +52,12 @@ class Product
     #[ORM\Column(length: 255)]
     private ?string $imgUrlProduct = null;
 
+    #[ORM\Column(type: Types::FLOAT, options: ['default' => 0])]
+    private float $avgRating = 0;
+
+    #[ORM\Column(type: Types::FLOAT, options: ['default' => 0])]
+    private float $avgTone = 0;
+
     /**
      * @var Collection<int, OrderItems>
      */
@@ -63,6 +69,32 @@ class Product
         $this->reviews = new ArrayCollection();
         $this->orderItems = new ArrayCollection();
     }
+
+
+    #[Groups(['product:read'])]
+    public function getAvgRating(): float
+    {
+        return $this->avgRating;
+    }
+
+    public function setAvgRating(float $avgRating): self
+    {
+        $this->avgRating = $avgRating;
+        return $this;
+    }
+
+    #[Groups(['product:read'])]
+    public function getAvgTone(): float
+    {
+        return $this->avgTone;
+    }
+
+    public function setAvgTone(float $avgTone): self
+    {
+        $this->avgTone = $avgTone;
+        return $this;
+    }
+
     #[Groups(['product:read'])]
     public function getId(): ?int
     {
